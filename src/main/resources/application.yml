@@ -21,6 +21,13 @@ logging:
       springframework: INFO
       hibernate: ERROR
 
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/  # URL du serveur Eureka
+    fetch-registry: true
+    register-with-eureka: true
+
 # app:
 #   compte:
 #     devise: EUR
@@ -61,9 +68,3 @@ logging:
 #     ms-compte:
 #       url: http://localhost:8082
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    fetch-registry: true
-    register-with-eureka: true

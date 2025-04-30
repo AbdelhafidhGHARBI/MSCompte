@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microservice Compte</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .panel {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input, select, button {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
+        .edit-btn {
+            background-color: #f39c12;
+        }
+        .delete-btn {
+            background-color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+<h1>Microservice Compte</h1>
+<div class="container">
+    <div class="panel">
+        <h2>Créer/Modifier un Compte</h2>
+        <form id="compteForm">
+            <input type="hidden" id="compteId">
+            <div>
+                <label for="numero">Numéro:</label>
+                <input type="text" id="numero" required>
+            </div>
+            <div>
+                <label for="titulaire">Titulaire:</label>
+                <input type="text" id="titulaire" required>
+            </div>
+            <div>
+                <label for="banqueId">Banque:</label>
+                <select id="banqueId" required>
+                    <option value="">-- Sélectionnez une banque --</option>
+                    <!-- Banks will be loaded here -->
+                </select>
+            </div>
+            <div>
+                <label for="typeCompte">Type de Compte:</label>
+                <select id="typeCompte" required>
+                    <option value="COURANT">Compte Courant</option>
+                    <option value="EPARGNE">Compte Épargne</option>
+                </select>
+            </div>
+            <div>
+                <label for="solde">Solde Initial:</label>
+                <input type="number" id="solde" required>
+            </div>
+            <div>
+                <label for="actif">Actif:</label>
+                <select id="actif">
+                    <option value="true">Oui</option>
+                    <option value="false">Non</option>
+                </select>
+            </div>
+            <button type="submit" id="submitBtn">Créer</button>
+        </form>
+    </div>
+    <div class="panel">
+        <h2>Liste des Comptes</h2>
+        <table id="compteTable">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Numéro</th>
+                <th>Titulaire</th>
+                <th>Banque</th>
+                <th>Type</th>
+                <th>Solde</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- Comptes will be listed here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const BANQUE_API_URL = 'http://localhost:8082/api/banques';
+    const API_URL = 'http://localhost:8081/api/comptes';
+    let comptes = [];
+    let banques = [];
+    let editMode = false;
+
+    // Load all data on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+        await fetchBanques();
+        await fetchComptes();
+    });
+
+    // Handle form submit
+    document.getElementById('compteForm').addEventListener('submit', handleSubmit);
+
+    async function fetchBanques() {
+        try {
+            const response = await fetch(BANQUE_API_URL);
+            banques = await response.json();
+            populateBanquesDropdown();
+        } catch (error) {
+            console.error('Error fetching banques:', error);
+            // For demo purposes, use sample data if API is not available
+            banques = [
+                { id: "1", nom: "BNP Paribas", code: "BNP", adresse: "Paris, France" },
+                { id: "2", nom: "Société Générale", code: "SG", adresse: "Lyon, France" },
+                { id: "3", nom: "Crédit Agricole", code: "CA", adresse: "Bordeaux, France" }
+            ];
+            populateBanquesDropdown();
+        }
+    }
+
+    function populateBanquesDropdown() {
+        const select = document.getElementById('banqueId');
+        // Clear existing options except the first one
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+
+        // Add banques to dropdown
+        banques.forEach(banque => {
+            const option = document.createElement('option');
+            option.value = banque.id;
+            option.textContent = `${banque.nom} (${banque.code})`;
+            select.appendChild(option);
+        });
+    }
+
+    async function fetchComptes() {
+        try {
+            const response = await fetch(API_URL);
+            comptes = await response.json();
+            renderCompteTable();
+        } catch (error) {
+            console.error('Error fetching comptes:', error);
+            // For demo purposes, use sample data if API is not available
+            comptes = [
+                {
+                    id: 1,
+                    numero: "FR7610001000010000000000100",
+                    titulaire: "John Doe",
+                    banqueId: "1",
+                    banqueDto: { id: "1", nom: "BNP Paribas", adresse: "Paris, France" },
+                    typeCompte: "COURANT",
+                    solde: 1500,
+                    actif: true,
+                    dateCreation: "2024-04-27T10:30:00",
+                    dateMiseAJour: "2024-04-27T10:30:00"
+                },
+                {
+                    id: 2,
+                    numero: "FR7610001000010000000000101",
+                    titulaire: "Jane Smith",
+                    banqueId: "2",
+                    banqueDto: { id: "2", nom: "Société Générale", adresse: "Lyon, France" },
+                    typeCompte: "EPARGNE",
+                    solde: 5000,
+                    actif: true,
+                    dateCreation: "2024-04-26T14:20:00",
+                    dateMiseAJour: "2024-04-26T14:20:00"
+                }
+            ];
+            renderCompteTable();
+        }
+    }
+
+    function renderCompteTable() {
+        const tableBody = document.querySelector('#compteTable tbody');
+        tableBody.innerHTML = '';
+
+        comptes.forEach(compte => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                    <td>${compte.id}</td>
+                    <td>${compte.numero}</td>
+                    <td>${compte.titulaire}</td>
+                    <td>${compte.banqueDto ? compte.banqueDto.nom : getBanqueNameById(compte.banqueId)}</td>
+                    <td>${compte.typeCompte}</td>
+                    <td>${compte.solde} €</td>
+                    <td class="actions">
+                        <button onclick="editCompte(${compte.id})" class="edit-btn">Modifier</button>
+                        <button onclick="deleteCompte(${compte.id})" class="delete-btn">Supprimer</button>
+                    </td>
+                `;
+            tableBody.appendChild(tr);
+        });
+    }
+
+    function getBanqueNameById(id) {
+        const banque = banques.find(b => b.id === id);
+        return banque ? banque.nom : 'Inconnue';
+    }
+
+    async function handleSubmit(event) {
+        event.preventDefault();
+
+        const compteData = {
+            id: document.getElementById('compteId').value || null,
+            numero: document.getElementById('numero').value,
+            titulaire: document.getElementById('titulaire').value,
+            banqueId: document.getElementById('banqueId').value,
+            typeCompte: document.getElementById('typeCompte').value,
+            solde: parseInt(document.getElementById('solde').value),
+            actif: document.getElementById('actif').value === 'true',
+            dateCreation: new Date().toISOString(),
+            dateMiseAJour: new Date().toISOString()
+        };
+
+        try {
+            let response;
+            if (editMode) {
+                response = await fetch(`${API_URL}/${compteData.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(compteData)
+                });
+            } else {
+                response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(compteData)
+                });
+            }
+
+            if (response.ok) {
+                // Reset form
+                document.getElementById('compteForm').reset();
+                document.getElementById('compteId').value = '';
+                document.getElementById('submitBtn').textContent = 'Créer';
+                editMode = false;
+
+                // Refresh table
+                fetchComptes();
+            }
+        } catch (error) {
+            console.error('Error saving compte:', error);
+            // For demo purposes, simulate a successful operation
+            if (editMode) {
+                const index = comptes.findIndex(c => c.id === parseInt(compteData.id));
+                if (index !== -1) {
+                    // Add banqueDto for display
+                    const banque = banques.find(b => b.id === compteData.banqueId);
+                    compteData.banqueDto = banque ? {
+                        id: banque.id,
+                        nom: banque.nom,
+                        adresse: banque.adresse
+                    } : null;
+
+                    comptes[index] = compteData;
+                }
+            } else {
+                compteData.id = comptes.length > 0 ? Math.max(...comptes.map(c => c.id)) + 1 : 1;
+
+                // Add banqueDto for display
+                const banque = banques.find(b => b.id === compteData.banqueId);
+                compteData.banqueDto = banque ? {
+                    id: banque.id,
+                    nom: banque.nom,
+                    adresse: banque.adresse
+                } : null;
+
+                comptes.push(compteData);
+            }
+
+            // Reset form
+            document.getElementById('compteForm').reset();
+            document.getElementById('compteId').value = '';
+            document.getElementById('submitBtn').textContent = 'Créer';
+            editMode = false;
+
+            // Refresh table
+            renderCompteTable();
+        }
+    }
+
+    function editCompte(id) {
+        const compte = comptes.find(c => c.id === id);
+        if (compte) {
+            document.getElementById('compteId').value = compte.id;
+            document.getElementById('numero').value = compte.numero;
+            document.getElementById('titulaire').value = compte.titulaire;
+            document.getElementById('banqueId').value = compte.banqueId;
+            document.getElementById('typeCompte').value = compte.typeCompte;
+            document.getElementById('solde').value = compte.solde;
+            document.getElementById('actif').value = compte.actif.toString();
+            document.getElementById('submitBtn').textContent = 'Modifier';
+            editMode = true;
+        }
+    }
+
+    async function deleteCompte(id) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce compte?')) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    fetchComptes();
+                }
+            } catch (error) {
+                console.error('Error deleting compte:', error);
+                // For demo purposes, simulate successful deletion
+                comptes = comptes.filter(c => c.id !== id);
+                renderCompteTable();
+            }
+        }
+    }
+</script>
+</body>
+</html>

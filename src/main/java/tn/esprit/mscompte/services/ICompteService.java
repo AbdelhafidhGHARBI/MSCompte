@@ -15,29 +15,11 @@ public interface ICompteService {
 
     CompteDto findById(Long id);
 
-    CompteDto findByNumero(String numero);
-
-    List<CompteDto> findByTitulaire(String titulaire);
-
-    Page<CompteDto> findAll(Pageable pageable);
+    List<CompteDto> findAll();
 
     CompteDto update(Long id, CompteDto compteDto);
 
-    CompteDto partialUpdate(Long id, Map<String, Object> updates);
-
     void delete(Long id);
 
-    Page<CompteDto> findByBanque(String banqueId, Pageable pageable);
 
-    CompteDto crediter(Long id, BigDecimal montant);
-
-    CompteDto debiter(Long id, BigDecimal montant);
-
-    void transferer(Long sourceId, Long destinationId, BigDecimal montant);
-
-    CompteDto activerDesactiver(Long id, boolean activer);
-
-    List<CompteDto> getComptesByType(TypeCompte type, int page, int size, String sortBy, String direction);
-
-    Page<CompteDto> findByType(TypeCompte type, Pageable pageable);
 }

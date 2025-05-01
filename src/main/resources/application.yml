@@ -1,6 +1,6 @@
 spring:
   application:
-    name: MSCompte
+    name: ms-compte
   datasource:
     url: jdbc:mysql://localhost:3306/compte_db_test?createDatabaseIfNotExist=true
     username: root
@@ -8,10 +8,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    # show-sql: true
-    # transaction:
-    # default-timeout: 30
-
 server:
   port: 8081
 
@@ -21,50 +17,7 @@ logging:
       springframework: INFO
       hibernate: ERROR
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/  # URL du serveur Eureka
-    fetch-registry: true
-    register-with-eureka: true
-
-# app:
-#   compte:
-#     devise: EUR
-#     type: Courant
-
-# spring:
-#   security:
-#     user:
-#       name: admin
-#       password: password
-
-# ms-banque:
-#   url: http://localhost:8081
-
-# resilience4j:
-#   circuitbreaker:
-#     configs:
-#       default:
-#         failureRateThreshold: 50
-#         waitDurationInOpenState: 5000
-#   retry:
-#     configs:
-#       default:
-#         maxAttempts: 3
-
-# feign:
-#   client:
-#     config:
-#       default:
-#         connectTimeout: 5000
-#         readTimeout: 10000
-#         loggerLevel: basic
-
-# feign:
-#   clients:
-#     ms-banque:
-#       url: http://localhost:8081
-#     ms-compte:
-#       url: http://localhost:8082
-
+#eureka:
+#  client:
+#    service-url:
+#      defaultZone: http://localhost:8761/eureka/

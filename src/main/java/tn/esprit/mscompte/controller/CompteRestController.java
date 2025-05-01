@@ -20,8 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/comptes")
 @RequiredArgsConstructor
-@CrossOrigin("http://localhost:8082")
-@Tag(name = "Compte", description = "API de gestion des comptes bancaires")
+@CrossOrigin
 public class CompteRestController {
 
     private final ICompteService compteService;

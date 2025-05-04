@@ -18,7 +18,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/comptes")
+@RequestMapping("/comptes")
 @RequiredArgsConstructor
 @CrossOrigin
 public class CompteRestController {

@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: ms-compte
+  cloud:
+    config:
+      uri: http://localhost:8888
+      name: ms-compte
+      profile: default
+      label: main
+
+# Facultatif mais recommandé
+logging:
+  level:
+    root: INFO

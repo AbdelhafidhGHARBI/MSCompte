@@ -24,3 +24,19 @@
 #  client:
 #    service-url:
 #      defaultZone: http://localhost:8761/eureka/
+spring:
+  application:
+    name: ms-compte
+
+#  profiles:
+  profiles:
+    active: prod   # ou 'dev'
+  config:
+    import: optional:configserver:http://localhost:8888
+
+
+# Facultatif mais recommandé
+logging:
+  level:
+    root: INFO
+

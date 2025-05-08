@@ -35,6 +35,13 @@ spring:
     import: optional:configserver:http://localhost:8888
 
 
+  datasource:
+
+    url: jdbc:mysql://your-db-host:3306/compte_db_test?createDatabaseIfNotExist=true
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
 # Facultatif mais recommandé
 logging:
   level:
@@ -44,7 +51,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,refresh
   endpoint:
     health:
       show-details: always

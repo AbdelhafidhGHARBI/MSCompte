@@ -28,19 +28,30 @@ spring:
   application:
     name: ms-compte
 
-#  profiles:
+  # profiles:
   profiles:
     active: prod   # ou 'dev'
   config:
     import: optional:configserver:http://localhost:8888
 
-
   datasource:
-
     url: jdbc:mysql://your-db-host:3306/compte_db_test?createDatabaseIfNotExist=true
     username: root
     password:
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # configuration Kafka:
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: ms-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
 
 # Facultatif mais recommandé
 logging:

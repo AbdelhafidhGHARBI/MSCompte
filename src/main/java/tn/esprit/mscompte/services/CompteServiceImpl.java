@@ -1,50 +1,71 @@
 package tn.esprit.mscompte.services;
 
 import jakarta.persistence.EntityNotFoundException;
+import jdk.jfr.Event;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.mscompte.dto.CompteDto;
 import tn.esprit.mscompte.entities.Compte;
-import tn.esprit.mscompte.entities.TypeCompte;
+import tn.esprit.mscompte.events.KafkaProducer;
 import tn.esprit.mscompte.mappers.CompteMapper;
 import tn.esprit.mscompte.repositories.CompteRepository;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.UUID;
+
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CompteServiceImpl implements ICompteService {
 
     private final CompteRepository compteRepository;
     private final CompteMapper compteMapper;
+    private final KafkaProducer kafkaProducer; // Injectez le producteur Kafka
 
     @Override
     public CompteDto create(CompteDto compteDto) {
+        // Convertir le DTO en entité
         Compte compte = compteMapper.toEntity(compteDto);
         compte.setDateCreation(LocalDateTime.now());
-        compte.setActif(true); // optionnel selon logique
+        compte.setActif(true); // Optionnel selon la logique métier
+
+        // Sauvegarder l'entité dans la base de données
         Compte savedCompte = compteRepository.save(compte);
-        return compteMapper.toDto(savedCompte);
+
+        // Mapper l'entité sauvegardée en DTO
+        CompteDto createdCompte = compteMapper.toDto(savedCompte);
+
+        // Publier un événement Kafka pour la création du compte
+        Event<CompteDto> event = new Event<>(
+                UUID.randomUUID().toString(),
+                "COMPTE_CREATED",
+                createdCompte,
+                LocalDateTime.now()
+        );
+        kafkaProducer.produceEvent(event);
+
+        return createdCompte;
     }
 
     @Override
     public CompteDto findById(Long id) {
+        // Rechercher le compte par ID
         Compte compte = compteRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Compte non trouvé avec l'id: " + id));
+
+        // Mapper l'entité en DTO
         return compteMapper.toDto(compte);
     }
 
     @Override
     public List<CompteDto> findAll() {
+        // Récupérer tous les comptes
         List<Compte> comptes = compteRepository.findAll();
+
+        // Mapper les entités en DTOs
         return comptes.stream()
                 .map(compteMapper::toDto)
                 .toList();
@@ -52,21 +73,57 @@ public class CompteServiceImpl implements ICompteService {
 
     @Override
     public CompteDto update(Long id, CompteDto compteDto) {
+        // Rechercher le compte existant par ID
         Compte compte = compteRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Compte non trouvé avec l'id: " + id));
 
+        // Mettre à jour l'entité avec les nouvelles données
         compteMapper.updateEntityFromDto(compteDto, compte);
         compte.setDateMiseAJour(LocalDateTime.now());
 
+        // Sauvegarder l'entité mise à jour
         Compte updatedCompte = compteRepository.save(compte);
-        return compteMapper.toDto(updatedCompte);
+
+        // Mapper l'entité mise à jour en DTO
+        CompteDto updatedCompteDto = compteMapper.toDto(updatedCompte);
+
+        // Publier un événement Kafka pour la mise à jour du compte
+        Event<CompteDto> event = new Event<>(
+                UUID.randomUUID().toString(),
+                "COMPTE_UPDATED",
+                updatedCompteDto,
+                LocalDateTime.now()
+        );
+        kafkaProducer.produceEvent(event);
+
+        return updatedCompteDto;
     }
 
     @Override
     public void delete(Long id) {
+        // Vérifier si le compte existe
         if (!compteRepository.existsById(id)) {
             throw new EntityNotFoundException("Compte non trouvé avec l'id: " + id);
         }
+
+        // Récupérer le compte avant suppression
+        Compte compte = compteRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Compte non trouvé avec l'id: " + id));
+
+        // Mapper l'entité en DTO
+        CompteDto deletedCompteDto = compteMapper.toDto(compte);
+
+        // Supprimer le compte
         compteRepository.deleteById(id);
+
+        // Publier un événement Kafka pour la suppression du compte
+        Event<CompteDto> event = new Event<>(
+                UUID.randomUUID().toString(),
+                "COMPTE_DELETED",
+                deletedCompteDto,
+                LocalDateTime.now()
+        );
+        kafkaProducer.produceEvent(event);
     }
+}
 }

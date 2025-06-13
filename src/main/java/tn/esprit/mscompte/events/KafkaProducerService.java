@@ -9,7 +9,7 @@ import tn.esprit.mscompte.dto.CompteDto;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class KafkaProducer {
+public class KafkaProducerService {
     private final KafkaTemplate<String, CompteDto> kafkaTemplate;
     private static final String TOPIC = "compte-events";
 

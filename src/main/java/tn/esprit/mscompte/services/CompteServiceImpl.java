@@ -1,13 +1,12 @@
 package tn.esprit.mscompte.services;
 
 import jakarta.persistence.EntityNotFoundException;
-import jdk.jfr.Event;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tn.esprit.mscompte.dto.CompteDto;
 import tn.esprit.mscompte.entities.Compte;
-import tn.esprit.mscompte.events.KafkaProducer;
+import tn.esprit.mscompte.events.KafkaProducerService;
 import tn.esprit.mscompte.mappers.CompteMapper;
 import tn.esprit.mscompte.repositories.CompteRepository;
 
@@ -23,7 +22,7 @@ public class CompteServiceImpl implements ICompteService {
 
     private final CompteRepository compteRepository;
     private final CompteMapper compteMapper;
-    private final KafkaProducer kafkaProducer; // Injectez le producteur Kafka
+    private final KafkaProducerService kafkaProducer; // Injectez le producteur Kafka
 
     @Override
     public CompteDto create(CompteDto compteDto) {
@@ -39,14 +38,7 @@ public class CompteServiceImpl implements ICompteService {
         CompteDto createdCompte = compteMapper.toDto(savedCompte);
 
         // Publier un événement Kafka pour la création du compte
-        Event<CompteDto> event = new Event<>(
-                UUID.randomUUID().toString(),
-                "COMPTE_CREATED",
-                createdCompte,
-                LocalDateTime.now()
-        );
-        kafkaProducer.produceEvent(event);
-
+        kafkaProducer.sendCompteEvent("COMPTE_CREATED", createdCompte);
         return createdCompte;
     }
 
@@ -62,11 +54,8 @@ public class CompteServiceImpl implements ICompteService {
 
     @Override
     public List<CompteDto> findAll() {
-        // Récupérer tous les comptes
-        List<Compte> comptes = compteRepository.findAll();
-
         // Mapper les entités en DTOs
-        return comptes.stream()
+        return compteRepository.findAll().stream()
                 .map(compteMapper::toDto)
                 .toList();
     }
@@ -88,14 +77,7 @@ public class CompteServiceImpl implements ICompteService {
         CompteDto updatedCompteDto = compteMapper.toDto(updatedCompte);
 
         // Publier un événement Kafka pour la mise à jour du compte
-        Event<CompteDto> event = new Event<>(
-                UUID.randomUUID().toString(),
-                "COMPTE_UPDATED",
-                updatedCompteDto,
-                LocalDateTime.now()
-        );
-        kafkaProducer.produceEvent(event);
-
+        kafkaProducer.sendCompteEvent("COMPTE_UPDATED", updatedCompteDto);
         return updatedCompteDto;
     }
 
@@ -107,8 +89,7 @@ public class CompteServiceImpl implements ICompteService {
         }
 
         // Récupérer le compte avant suppression
-        Compte compte = compteRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Compte non trouvé avec l'id: " + id));
+        Compte compte = compteRepository.findById(id).get();
 
         // Mapper l'entité en DTO
         CompteDto deletedCompteDto = compteMapper.toDto(compte);
@@ -117,13 +98,6 @@ public class CompteServiceImpl implements ICompteService {
         compteRepository.deleteById(id);
 
         // Publier un événement Kafka pour la suppression du compte
-        Event<CompteDto> event = new Event<>(
-                UUID.randomUUID().toString(),
-                "COMPTE_DELETED",
-                deletedCompteDto,
-                LocalDateTime.now()
-        );
-        kafkaProducer.produceEvent(event);
+        kafkaProducer.sendCompteEvent("COMPTE_DELETED", deletedCompteDto);
     }
-}
 }

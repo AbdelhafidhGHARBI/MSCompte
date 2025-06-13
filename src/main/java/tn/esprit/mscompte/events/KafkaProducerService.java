@@ -1,19 +1,20 @@
 package tn.esprit.mscompte.events;
 
-import jdk.jfr.Event;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import tn.esprit.mscompte.dto.CompteDto;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class KafkaProducer {
-    private final KafkaTemplate<String, Event> kafkaTemplate;
+    private final KafkaTemplate<String, CompteDto> kafkaTemplate;
     private static final String TOPIC = "compte-events";
 
-    public void produceEvent(Event compteEvent) {
-        kafkaTemplate.send(TOPIC, compteEvent.type().toString(), compteEvent);
+    public void sendCompteEvent(String eventType, CompteDto compteDto) {
+        kafkaTemplate.send(TOPIC, eventType, compteDto);
+        log.info("Sent event [{}] to Kafka with data: {}", eventType, compteDto);
     }
 }
